@@ -1,6 +1,10 @@
+import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../config/env.config";
-import { IUser } from "../modules/user/user.interface";
-import { generateToken } from "./jwt";
+import { IsActive, IUser } from "../modules/user/user.interface";
+import { generateToken, verifyToken } from "./jwt";
+import { User } from "../modules/user/user.model";
+import AppError from "../errorHelpers/appError";
+import httpStatus from 'http-status-codes';
 
 
 
@@ -20,3 +24,30 @@ export const createUserToken = (user: Partial<IUser>) => {
     }
 }
 
+export const createAccessTokenUsingRefreshToken = async (refreshToken: string) => {
+    const verifiedRefreshToken = verifyToken(refreshToken, envVars.JWT_REFRESH_SECRET) as JwtPayload
+
+    const isUserExist = await User.findOne({ email: verifiedRefreshToken.email }).select("-password")
+
+    if (!isUserExist) {
+        throw new AppError(httpStatus.BAD_REQUEST, "User does not exist")
+    }
+
+    if (isUserExist.isDeleted) {
+        throw new AppError(httpStatus.BAD_REQUEST, "User is deleted, Please contact Admin")
+    }
+
+    if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
+        throw new AppError(httpStatus.BAD_REQUEST, `Sorry, User is ${isUserExist.isActive}`)
+    }
+
+    const jwtPayload = {
+        userId: isUserExist._id,
+        email: isUserExist.email,
+        role: isUserExist.role
+    }
+
+    const newAccessToken = generateToken(jwtPayload, envVars.JWT_ACCESS_SECRET, envVars.JWT_ACCESS_EXPIRES)
+
+    return newAccessToken
+}

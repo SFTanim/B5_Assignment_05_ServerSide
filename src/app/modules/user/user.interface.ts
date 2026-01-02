@@ -28,6 +28,6 @@ export interface IUser {
     picture?: string
     address?: string
     role?: Role
-    auth?: IAuthProvider[]
+    auths?: IAuthProvider[]
     trangactionId?: Types.ObjectId[]
 }
