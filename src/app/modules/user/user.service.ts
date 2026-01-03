@@ -1,44 +1,52 @@
-import { Request, Response } from "express";
+import {  Response } from "express";
 import { IAuthProvider, IUser, Role } from "./user.interface";
 import { User } from "./user.model";
 import httpStatus from 'http-status-codes';
 import { checkHashedPassword, hashingPassword } from "../../utils/passwordUtils";
 import AppError from "../../errorHelpers/appError";
 import { JwtPayload } from "jsonwebtoken";
+import { createUserToken } from "../../utils/userTokens";
+import { setCookies } from "../../utils/setCookies";
 
 
 
-    const createUser = async (paylaod: Partial<IUser>) => {
-        const { email, password, ...rest } = paylaod
-        if (!email) {
-            throw new AppError(httpStatus.BAD_REQUEST, "Email Required")
-        }
-        const ifUserExist = await User.findOne({ email: email })
-
-        if (ifUserExist) {
-            throw new AppError(httpStatus.BAD_REQUEST, "User Already Exist")
-        }
-
-        if (!password) {
-            throw new AppError(httpStatus.BAD_REQUEST, "Password Required")
-        }
-
-        const hashedPassword = await hashingPassword(password)
-
-        const authProvider: IAuthProvider = {
-            provider: "credentials",
-            providerId: email
-        }
-        const user = await User.create({
-            email: email,
-            password: hashedPassword,
-            auths: [authProvider],
-            ...rest
-        })
-
-        return { data: user }
-
+const createUser = async (res: Response, paylaod: Partial<IUser>) => {
+    const { email, password, ...rest } = paylaod
+    if (!email) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Email Required")
     }
+    const ifUserExist = await User.findOne({ email: email })
+
+    if (ifUserExist) {
+        throw new AppError(httpStatus.BAD_REQUEST, "User Already Exist")
+    }
+
+    if (!password) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Password Required")
+    }
+
+    const hashedPassword = await hashingPassword(password)
+
+    const authProvider: IAuthProvider = {
+        provider: "credentials",
+        providerId: email
+    }
+    const user = await User.create({
+        email: email,
+        password: hashedPassword,
+        auths: [authProvider],
+        ...rest
+    })
+
+    const userObj = user.toObject()
+    delete userObj.password;
+
+    const userTokens = createUserToken(userObj)
+    setCookies(res, userTokens)
+
+    return { data: userObj }
+
+}
 
 
 const getAllUser = async () => {

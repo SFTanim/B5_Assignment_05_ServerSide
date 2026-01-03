@@ -37,10 +37,10 @@ passport.use(new LocalStrategy({ usernameField: "email", passwordField: "passwor
             if (!isPasswordCorrect) {
                 return done(null, false, { message: "Password doesn't match. Please try again" })
             }
+            const userObj = isUserExist.toObject()
+            delete userObj.password;
 
-            delete isUserExist.password;
-
-            return done(null, isUserExist)
+            return done(null, userObj)
         } catch (error) {
             if (envVars.NODE_ENV === "development") {
                 console.log(error)
