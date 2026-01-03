@@ -9,14 +9,14 @@ import { IUser } from "./user.interface";
 
 
 const createUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const payload = req.body
+    const payload: IUser = req.body
     const result = await UserService.createUser(payload)
 
     sendResponse(res, {
         statusCode: httpStatus.CREATED,
         success: true,
         message: "User created successfully",
-        data: result
+        data: result.data
     })
 })
 

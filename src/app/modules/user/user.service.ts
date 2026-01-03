@@ -8,38 +8,37 @@ import { JwtPayload } from "jsonwebtoken";
 
 
 
-const createUser = async (paylaod: Partial<IUser>) => {
-    const { email, password, ...rest } = paylaod
-    if (!email) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Email Required")
+    const createUser = async (paylaod: Partial<IUser>) => {
+        const { email, password, ...rest } = paylaod
+        if (!email) {
+            throw new AppError(httpStatus.BAD_REQUEST, "Email Required")
+        }
+        const ifUserExist = await User.findOne({ email: email })
+
+        if (ifUserExist) {
+            throw new AppError(httpStatus.BAD_REQUEST, "User Already Exist")
+        }
+
+        if (!password) {
+            throw new AppError(httpStatus.BAD_REQUEST, "Password Required")
+        }
+
+        const hashedPassword = await hashingPassword(password)
+
+        const authProvider: IAuthProvider = {
+            provider: "credentials",
+            providerId: email
+        }
+        const user = await User.create({
+            email: email,
+            password: hashedPassword,
+            auths: [authProvider],
+            ...rest
+        })
+
+        return { data: user }
+
     }
-    const ifUserExist = await User.findOne({ email: email })
-
-    if (ifUserExist) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User Already Exist")
-    }
-
-    if (!password) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Password Required")
-    }
-
-    const hashedPassword = await hashingPassword(password)
-    // const checkPassword = await checkHashedPassword(password, hashedPassword)
-
-    const authProvider: IAuthProvider = {
-        provider: "credentials",
-        providerId: email
-    }
-    const user = await User.create({
-        email: email,
-        password: hashedPassword,
-        auths: [authProvider],
-        ...rest
-    })
-
-    return user
-
-}
 
 
 const getAllUser = async () => {
