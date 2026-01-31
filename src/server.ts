@@ -25,7 +25,7 @@ const startServer = async () => {
 (
     async () => {
         await startServer()
-        // await generateSuperAdmin()
+        await generateSuperAdmin()
     }
 )()
 

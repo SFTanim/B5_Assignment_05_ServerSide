@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy, Profile, VerifyCallback } from "passport-google-oauth20";
-import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as localStrategy } from "passport-local";
 import { envVars } from "./env.config";
 import { User } from "../modules/user/user.model";
 import { IsActive, Role } from "../modules/user/user.interface";
@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 
 
 // For local authentication
-passport.use(new LocalStrategy({ usernameField: "email", passwordField: "password" },
+passport.use(new localStrategy({ usernameField: "email", passwordField: "password" },
     async (email: string, password: string, done) => {
         try {
 
@@ -33,14 +33,16 @@ passport.use(new LocalStrategy({ usernameField: "email", passwordField: "passwor
                 return done("It is google authenticated. Try to login using google authentication")
             }
 
-            const isPasswordCorrect = await bcrypt.compare(password, isUserExist.password as string)
+            const isPasswordCorrect = await bcrypt.compare(password as string, isUserExist.password as string)
+
             if (!isPasswordCorrect) {
                 return done(null, false, { message: "Password doesn't match. Please try again" })
             }
-            const userObj = isUserExist.toObject()
-            delete userObj.password;
 
-            return done(null, userObj)
+            // const userObj = isUserExist.toObject()
+            // delete userObj.password;
+
+            return done(null, isUserExist)
         } catch (error) {
             if (envVars.NODE_ENV === "development") {
                 console.log(error)

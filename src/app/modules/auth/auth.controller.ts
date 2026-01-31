@@ -12,18 +12,22 @@ import { setCookies } from "../../utils/setCookies";
 const credentialLoginViaPassport = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     passport.authenticate("local", async (err: any, user: any, info: any) => {
+
         if (err) {
-            return next(new AppError(httpStatus.BAD_REQUEST, err))
+            return next(new AppError(401, err))
         }
+
         if (!user) {
-            return next(new AppError(httpStatus.BAD_REQUEST, info.message))
+            return next(new AppError(401, info.message))
+
         }
 
         const userTokens = createUserToken(user)
-        setCookies(res, userTokens)
-        
+
         const userObj = user.toObject()
         delete userObj.password;
+
+        setCookies(res, userTokens)
 
         sendResponse(res, {
             statusCode: httpStatus.OK,
@@ -35,12 +39,33 @@ const credentialLoginViaPassport = catchAsync(async (req: Request, res: Response
                 user: userObj
             }
         })
-    })
+    })(req, res, next)
 
 
 })
 
+const userLogout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax"
+    })
+
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax"
+    })
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User logged out successfully",
+        data: undefined
+    })
+})
 
 export const AuthController = {
     credentialLoginViaPassport,
+    userLogout
 }

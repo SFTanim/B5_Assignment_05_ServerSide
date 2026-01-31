@@ -26,7 +26,7 @@ export const generateSuperAdmin = async () => {
             email: envVars.SUPER_ADMIN_EMAIL,
             password: hashedPassword,
             isVerified: true,
-            auth: [authProvider]
+            auths: [authProvider]
         }
 
         const admin = await User.create(adminPayload)
